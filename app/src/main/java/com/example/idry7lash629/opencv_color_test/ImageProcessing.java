@@ -10,13 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * Created by 86004771 on 2017/04/19.
- */
-
 public class ImageProcessing {
 
-    static double RESIZE_RATIO=0.25;
+    static Size 画像処理サイズ=new Size(640,480);
+
     static Scalar[] 黄バンド=new Scalar[]{new Scalar(20, 127, 132), new Scalar(30, 255, 230)};
     static Scalar[] 緑バンド = new Scalar[] { new Scalar(60,102, 40), new Scalar(80, 255, 179) };
     //赤形の色領域は両端なので引数が多い
@@ -35,14 +32,35 @@ public class ImageProcessing {
     public static Mat make_frame_function(CameraBridgeViewBase.CvCameraViewFrame Frame)
     {
         Mat frame_resize=Frame.rgba();//処理速度向上のため画素を下げる
-        Imgproc.resize(frame_resize, frame_resize, new Size(),RESIZE_RATIO, RESIZE_RATIO, Imgproc.INTER_CUBIC);
+        Size 描画サイズ=frame_resize.size();
+        Imgproc.resize(frame_resize, frame_resize,画像処理サイズ);
+        Mat dst=Mat.zeros(画像処理サイズ,CvType.CV_8UC3);
 
-        Mat dst=Mat.zeros(frame_resize.size(),CvType.CV_8UC3);
         色抽出と描画(frame_resize,dst);
+        //dst=frame_resize;
+        中心のHSV値表示(frame_resize,dst);
 
-        Imgproc.resize(dst, dst, new Size(),1.0/RESIZE_RATIO, 1.0/RESIZE_RATIO, Imgproc.INTER_CUBIC);
+        Imgproc.resize(dst, dst, 描画サイズ);//元サイズに戻さないと描画されなかった
+
+        frame_resize.release();
         return dst;
+    }
+    private static void 中心のHSV値表示(Mat src_color,Mat dst_color)//
+    {
+        //dst_color=src_color;
+        Mat hsv=new Mat(src_color.size(),CvType.CV_8UC3);
+        Imgproc.cvtColor(src_color,hsv, Imgproc.COLOR_RGB2HSV);//rgbからhsvへ
 
+        double[] color_hsv=hsv.get(hsv.height()/2,hsv.width()/2);
+        double[] color_rgb=src_color.get(hsv.height()/2,hsv.width()/2);
+
+        Imgproc.rectangle(dst_color, new Point(0,0),new Point(hsv.width(),hsv.height()/10), new Scalar(color_rgb[0],color_rgb[1],color_rgb[2]),-1);
+        Imgproc.circle(dst_color, new Point(hsv.width()/2,hsv.height()/2),10,new Scalar(color_rgb[0],color_rgb[1],color_rgb[2]),-1);
+        Imgproc.putText(dst_color,""+(int)color_hsv[0]+','+(int)color_hsv[1]+','+(int)color_hsv[2]+"",
+                new Point(hsv.width()/2,hsv.height()/10),1,2.0, new Scalar(255.0-color_rgb[0],255.0-color_rgb[1],255.0-color_rgb[2]));
+
+        Log.d("中心のHSV値表示","hsv="+(int)color_hsv[0]+'\t'+(int)color_hsv[1]+'\t'+(int)color_hsv[2]);
+        hsv.release();
     }
 
     private static void 色抽出と描画(Mat src_color,Mat dst_color)
@@ -111,7 +129,6 @@ public class ImageProcessing {
 
         Imgproc.cvtColor(src_rgb,hsv, Imgproc.COLOR_RGB2HSV);//rgbからhsvへ
         Core.inRange( hsv,  range[0],  range[1], dst_gray);//グレースケールになる
-
         if(range.length>2)
         {
             Mat gray=new Mat(src_rgb.size(), CvType.CV_8UC1);
