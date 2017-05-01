@@ -2,15 +2,23 @@ package com.example.idry7lash629.opencv_color_test;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.widget.Toolbar;
 
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+    double 採点結果;
+
 
     static {//これ忘れがち！
         System.loadLibrary("opencv_java3");
@@ -40,12 +48,26 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setActionBar((Toolbar) findViewById(R.id.toolbar));
         // カメラビューのインスタンスを変数にバインド
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
+
+
+        Scoring.csv_read(this,Scoring.DATA1,"s5.2.csv");
+        Scoring.csv_read(this,Scoring.DATA2,"s5.8.csv");
+        採点結果=Scoring.採点処理();//うまくいってるっぽい
+
         // リスナーの設定 (後述)
         mCameraView.setCvCameraViewListener(this);
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
     @Override
     public void onPause() {
         if (mCameraView != null) {
@@ -82,9 +104,10 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-
+        System.gc();//意味ないかも
 
         return ImageProcessing.make_frame_function(inputFrame);
+        //return inputFrame.rgba();
     }
 
 

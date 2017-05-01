@@ -15,7 +15,16 @@
         android:layout_height="fill_parent"
         android:visibility="visible"
         opencv:show_fps="true"
-        opencv:camera_id="any" />
+        opencv:camera_id="any"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
-
+    <Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:minHeight="?android:actionBarSize"
+        android:background="?android:colorPrimary"
+        android:layout_alignParentBottom="true">
+    </Toolbar>
 </RelativeLayout>
