@@ -3,13 +3,17 @@ package com.example.idry7lash629.opencv_color_test;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.MediaController;
 import android.widget.Toolbar;
+import android.widget.VideoView;
 
 
 import org.opencv.android.BaseLoaderCallback;
@@ -21,15 +25,17 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     int SELECTED_ID=R.id.menu_movie;
     View View_MOVIE;
     View View_IMGPROC;
 
-    // カメラビューのインスタンス
-    // CameraBridgeViewBase は JavaCameraView/NativeCameraView のスーパークラス
     private CameraBridgeViewBase mCameraView;
+    private VideoView mVideoView;
+    private MediaController mMediaController;
+    private int position_video = 0;
     double 採点結果;
 
     static {//これ忘れがち！
@@ -40,34 +46,104 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //setContentView(R.layout.activity_main);//UI何もない．背景が透明にならないから最背面にとりあえず表示
 
-
-        View_IMGPROC=this.getLayoutInflater().inflate(R.layout.activity_imgproc,null);
+        View_IMGPROC=this.getLayoutInflater().inflate(R.layout.activity_imgproc,null);//画像処理デバッグ
         this.addContentView(View_IMGPROC,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
         View_IMGPROC.setVisibility(View.INVISIBLE);
+        mCameraView.setVisibility(View.INVISIBLE);//これ単体でINVISIBLEしないと消えない
 
-        View_MOVIE=this.getLayoutInflater().inflate(R.layout.activity_movie,null);
+        View_MOVIE=this.getLayoutInflater().inflate(R.layout.activity_movie,null);//お手本再生画面
         this.addContentView(View_MOVIE,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         View_MOVIE.setVisibility(View.VISIBLE);
-
-        //setContentView(R.layout.activity_main);
-
+        movie_init();
 
 
 
 
 
-
-
+        //csvデータからの採点処理，うまくいってるっぽい
         Scoring.csv_read(this,Scoring.DATA1,"s5.2.csv");
         Scoring.csv_read(this,Scoring.DATA2,"s5.8.csv");
-        採点結果=Scoring.採点処理();//うまくいってるっぽい
+        採点結果=Scoring.採点処理();
 
-        // リスナーの設定 (後述)
-        mCameraView.setCvCameraViewListener(this);
+
+        mCameraView.setCvCameraViewListener(this);// cameraリスナーの設定 (後述)
     }
 
+    private void movie_init()
+    {
+        mVideoView = (VideoView)findViewById(R.id.videoview);
+        // Set the media controller buttons
+        if (mMediaController == null) {
+            mMediaController = new MediaController(MainActivity.this);
+            //mMediaController.setAnchorView(mVideoView);// Set the videoView that acts as the anchor for the MediaController.
+            mVideoView.setMediaController(mMediaController);// Set MediaController for VideoView
+        }
+        try {
+            // ID of video file.
+            int id = this.getRawResIdByName("yoyo");
+            mVideoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + id));
+
+        } catch (Exception e) {
+            Log.e("Error", e.getMessage());
+            e.printStackTrace();
+        }
+        mVideoView.requestFocus();
+        // When the video file ready for playback.
+        mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+
+            public void onPrepared(MediaPlayer mediaPlayer) {
+
+
+                mVideoView.seekTo(position_video);
+                if (position_video == 0) {
+                    //mVideoView.start();
+                }
+
+                // When video Screen change size.
+                mediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
+                    @Override
+                    public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
+
+                        // Re-Set the videoView that acts as the anchor for the MediaController
+                        mMediaController.setAnchorView(mVideoView);
+                    }
+                });
+            }
+        });
+
+    }
+    // Find ID corresponding to the name of the resource (in the directory raw).
+    public int getRawResIdByName(String resName) {
+        String pkgName = this.getPackageName();
+        // Return 0 if not found.
+        int resID = this.getResources().getIdentifier(resName, "raw", pkgName);
+        Log.i("AndroidVideoView", "Res Name: " + resName + "==> Res ID = " + resID);
+        return resID;
+    }
+    // When you change direction of phone, this method will be called.
+    // It store the state of video (Current position)
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+
+        // Store current position.
+        savedInstanceState.putInt("CurrentPosition", mVideoView.getCurrentPosition());
+        mVideoView.pause();
+    }
+
+
+    // After rotating the phone. This method is called.
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        // Get saved position.
+        position_video = savedInstanceState.getInt("CurrentPosition");
+        mVideoView.seekTo(position_video);
+    }
 
     // ライブラリ初期化完了後に呼ばれるコールバック (onManagerConnected)
     // public abstract class BaseLoaderCallback implements LoaderCallbackInterface
@@ -98,10 +174,12 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         View_IMGPROC.setVisibility(View.INVISIBLE);
         View_MOVIE.setVisibility(View.INVISIBLE);
+        mCameraView.setVisibility(View.INVISIBLE);
 
         switch(SELECTED_ID) {
             case R.id.menu_imgproc:
                 View_IMGPROC.setVisibility(View.VISIBLE);
+                mCameraView.setVisibility(View.VISIBLE);
                 break;
             case R.id.menu_movie:
                 View_MOVIE.setVisibility(View.VISIBLE);
