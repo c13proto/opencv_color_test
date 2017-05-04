@@ -12,22 +12,22 @@ import java.util.List;
 
 public class ImageProcessing {
 
-    static Size 画像処理サイズ=new Size(640,480);
+    static final Size 画像処理サイズ=new Size(640,480);
 
-    static Scalar[] 黄バンド=new Scalar[]{new Scalar(20, 127, 132), new Scalar(30, 255, 230)};
-    static Scalar[] 緑バンド = new Scalar[] { new Scalar(60,102, 40), new Scalar(80, 255, 179) };
+    static final Scalar[] 黄バンド=new Scalar[]{new Scalar(20, 127, 132), new Scalar(30, 255, 230)};
+    static final Scalar[] 緑バンド = new Scalar[] { new Scalar(60,102, 40), new Scalar(80, 255, 179) };
     //赤形の色領域は両端なので引数が多い
-    static Scalar[] 赤バンド = new Scalar[] { new Scalar(175, 127, 76), new Scalar(180, 255, 153), new Scalar(0, 127,76), new Scalar(3, 255, 153)};
-    static Scalar[] 桃バンド = new Scalar[] { new Scalar(170, 43, 204), new Scalar(180, 102, 255) };
-    static Scalar[] 青バンド = new Scalar[] { new Scalar(100, 127, 51), new Scalar(115, 255, 230) };
-    static Scalar[] 紫バンド = new Scalar[] { new Scalar(120, 127, 51), new Scalar(130, 255, 166) };
-    static Scalar[] 黄緑Tシャツ = new Scalar[] { new Scalar(32, 127, 102), new Scalar(43, 255, 204) };
+    static final Scalar[] 赤バンド = new Scalar[] { new Scalar(175, 127, 76), new Scalar(180, 255, 153), new Scalar(0, 127,76), new Scalar(3, 255, 153)};
+    static final Scalar[] 桃バンド = new Scalar[] { new Scalar(170, 43, 204), new Scalar(180, 102, 255) };
+    static final Scalar[] 青バンド = new Scalar[] { new Scalar(100, 127, 51), new Scalar(115, 255, 230) };
+    static final Scalar[] 紫バンド = new Scalar[] { new Scalar(120, 127, 51), new Scalar(130, 255, 166) };
+    static final Scalar[] 黄緑Tシャツ = new Scalar[] { new Scalar(32, 127, 102), new Scalar(43, 255, 204) };
 
-    static Scalar[] Scalar_右手 = 黄バンド;
-    static Scalar[] Scalar_左手 = 赤バンド;
-    static Scalar[] Scalar_右足 = 緑バンド;
-    static Scalar[] Scalar_左足 = 青バンド;
-    static Scalar[] Scalar_胴 = 黄緑Tシャツ;
+    static final Scalar[] Scalar_右手 = 黄バンド;
+    static final Scalar[] Scalar_左手 = 赤バンド;
+    static final Scalar[] Scalar_右足 = 緑バンド;
+    static final Scalar[] Scalar_左足 = 青バンド;
+    static final Scalar[] Scalar_胴 = 黄緑Tシャツ;
 
     public static Mat make_frame_function(CameraBridgeViewBase.CvCameraViewFrame Frame)
     {
@@ -57,7 +57,7 @@ public class ImageProcessing {
         Imgproc.rectangle(dst_color, new Point(0,0),new Point(hsv.width(),hsv.height()/10), new Scalar(color_rgb[0],color_rgb[1],color_rgb[2]),-1);
         Imgproc.circle(dst_color, new Point(hsv.width()/2,hsv.height()/2),10,new Scalar(color_rgb[0],color_rgb[1],color_rgb[2]),-1);
         Imgproc.putText(dst_color,""+(int)color_hsv[0]+','+(int)color_hsv[1]+','+(int)color_hsv[2]+"",
-                new Point(hsv.width()/2,hsv.height()/10),1,2.0, new Scalar(255.0-color_rgb[0],255.0-color_rgb[1],255.0-color_rgb[2]));
+                new Point(hsv.width()/2,hsv.height()/10),1,2.0, new Scalar(Math.abs(color_rgb[0]-127),Math.abs(color_rgb[1]-127),Math.abs(color_rgb[2]-127)));
 
         Log.d("中心のHSV値表示","hsv="+(int)color_hsv[0]+'\t'+(int)color_hsv[1]+'\t'+(int)color_hsv[2]);
         hsv.release();
