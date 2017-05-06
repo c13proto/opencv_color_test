@@ -1,8 +1,6 @@
 package com.example.idry7lash629.opencv_color_test;
 
 import android.app.Activity;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,7 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.MediaController;
-import android.widget.Toolbar;
 import android.widget.VideoView;
 
 
@@ -20,10 +17,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -46,30 +40,26 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_main);//UI何もない．背景が透明にならないから最背面にとりあえず表示
 
         View_IMGPROC=this.getLayoutInflater().inflate(R.layout.activity_imgproc,null);//画像処理デバッグ
         this.addContentView(View_IMGPROC,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         mCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_view);
         View_IMGPROC.setVisibility(View.INVISIBLE);
         mCameraView.setVisibility(View.INVISIBLE);//これ単体でINVISIBLEしないと消えない
+        mCameraView.setCvCameraViewListener(this);// cameraリスナーの設定 (後述)
 
         View_MOVIE=this.getLayoutInflater().inflate(R.layout.activity_movie,null);//お手本再生画面
         this.addContentView(View_MOVIE,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         View_MOVIE.setVisibility(View.VISIBLE);
         movie_init();
 
-
-
-
+        //setContentView(R.layout.activity_main);//UI何もない．背景が透明にならないから非表示
 
         //csvデータからの採点処理，うまくいってるっぽい
         Scoring.csv_read(this,Scoring.DATA1,"s5.2.csv");
         Scoring.csv_read(this,Scoring.DATA2,"s5.8.csv");
         採点結果=Scoring.採点処理();
 
-
-        mCameraView.setCvCameraViewListener(this);// cameraリスナーの設定 (後述)
     }
 
     private void movie_init()
@@ -83,7 +73,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         }
         try {
             // ID of video file.
-            int id = this.getRawResIdByName("yoyo");
+            int id = this.getRawResIdByName("radio1");
             mVideoView.setVideoURI(Uri.parse("android.resource://" + getPackageName() + "/" + id));
 
         } catch (Exception e) {
@@ -96,19 +86,15 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
             public void onPrepared(MediaPlayer mediaPlayer) {
 
-
                 mVideoView.seekTo(position_video);
-                if (position_video == 0) {
-                    //mVideoView.start();
-                }
+                //if (position_video == 0)mVideoView.start();
 
                 // When video Screen change size.
                 mediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
                     @Override
                     public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
-
-                        // Re-Set the videoView that acts as the anchor for the MediaController
-                        mMediaController.setAnchorView(mVideoView);
+                        //mMediaController.setAnchorView(mVideoView);// Re-Set the videoView that acts as the anchor for the MediaController
+                        mVideoView.setMediaController(mMediaController);// Set MediaController for VideoView
                     }
                 });
             }
@@ -133,8 +119,6 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         savedInstanceState.putInt("CurrentPosition", mVideoView.getCurrentPosition());
         mVideoView.pause();
     }
-
-
     // After rotating the phone. This method is called.
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -199,7 +183,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     @Override
     protected void onResume() {
         super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_4, this, mLoaderCallback);
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
     }
 
     @Override
@@ -214,7 +198,6 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     public void onCameraViewStarted(int width, int height) {
         // Mat(int rows, int cols, int type)
         // rows(行): height, cols(列): width
-
     }
 
     @Override
