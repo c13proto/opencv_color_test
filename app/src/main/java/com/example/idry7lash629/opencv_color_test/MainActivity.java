@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -11,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.MediaController;
 import android.widget.VideoView;
-
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -59,6 +60,9 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         Scoring.csv_read(this,Scoring.DATA1,"s5.2.csv");
         Scoring.csv_read(this,Scoring.DATA2,"s5.8.csv");
         採点結果=Scoring.採点処理();
+
+
+
 
     }
 
