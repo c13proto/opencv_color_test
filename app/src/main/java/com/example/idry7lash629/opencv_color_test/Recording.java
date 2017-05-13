@@ -35,14 +35,7 @@ public class Recording {
     //mediacodec関係
     private static FileOutputStream FOS;
     private static MediaCodec mMediaCodec;
-    private static ByteBuffer[] inputBuffers;
-    private static ByteBuffer[] outputBuffers;
-    private static BufferedOutputStream BOS;
-
-//    private static MediaMuxer mMediaMuxer;
-//    private static int mTrackIndex;
-//    private static boolean mMuxerStarted=false;
-//    private static MediaCodec.BufferInfo mBufferInfo;
+    private static MediaFormat OutputFormat;
 
     //jcodec関係
     private static SequenceEncoder mSequenceEncoder;
@@ -54,35 +47,21 @@ public class Recording {
     {
         try {
             Log.d(TAG, "MediaCodecInit ");
-
-            FOS=new FileOutputStream(filename);
-
-
             File f = new File(filename);
             if (f.exists()) f.delete();
-            try {
-                BOS = new BufferedOutputStream(new FileOutputStream(f));
-                Log.i(TAG, "outputStream initialized");
-            } catch (Exception e){
-                e.printStackTrace();
-            }
+            FOS=new FileOutputStream(filename);
 
-
-
-
-            MediaFormat mMediaFormat = MediaFormat.createVideoFormat("video/avc", 640, 480);
-            mMediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 125000);
-            mMediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-            mMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            mMediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
+            MediaFormat format = MediaFormat.createVideoFormat("video/avc", 640, 480);
+            format.setInteger(MediaFormat.KEY_BIT_RATE, 125000);
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
+            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
+            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
             mMediaCodec = MediaCodec.createEncoderByType("video/avc");
-            mMediaCodec.configure(mMediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            OutputFormat=mMediaCodec.getOutputFormat();
+
             mMediaCodec.start();
 
-            //ダミーの音生成
-//            mMediaMuxer = new MediaMuxer(filename,MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-//            mTrackIndex = -1;
-//            mMuxerStarted = false;
 
         }catch (IOException e) {
             e.printStackTrace();
@@ -104,8 +83,8 @@ public class Recording {
 //                bmp.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
 
                 byte[] data = getBitmapAsByteArray(BitmapFactory.decodeStream(new FileInputStream(作業ディレクトリ + n + ".jpg")));
-                MediaCodec_encode(data);
-
+                MediaCodec_encode_BuffArrays(data);
+                //MediaCodec_encode_Buffers(data);
                 //bmp.recycle();
 
             }
@@ -117,11 +96,57 @@ public class Recording {
             Log.e(TAG,"mMediaCodec process error");
         }
     }
-    private static synchronized void MediaCodec_encode(byte[] data)
+    private static synchronized void MediaCodec_encode_Buffers(byte[] data)
     {
-        try {
-            inputBuffers = mMediaCodec.getInputBuffers();// here changes
-            outputBuffers = mMediaCodec.getOutputBuffers();
+        try
+        {
+            int inputBufferId = mMediaCodec.dequeueInputBuffer(-1);
+            if (inputBufferId >= 0) {
+                ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferId);
+                inputBuffer.clear();
+                inputBuffer.put(data);
+                mMediaCodec.queueInputBuffer(inputBufferId, 0, data.length, 0, 0);
+            }
+
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            int outputBufferId = mMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
+            Log.d(TAG, "outputBufferIndex-->" + outputBufferId);
+            if (outputBufferId >= 0) {
+                ByteBuffer outputBuffer  = mMediaCodec.getOutputBuffer(outputBufferId);
+                System.out.println("buffer info-->" + bufferInfo.offset + "--"
+                        + bufferInfo.size + "--" + bufferInfo.flags + "--"
+                        + bufferInfo.presentationTimeUs);
+               MediaFormat bufferFormat=mMediaCodec.getOutputFormat(outputBufferId);
+                byte[] outData = new byte[bufferInfo.size];
+                outputBuffer.get(outData);
+                try {
+                    if (bufferInfo.offset != 0) {
+                        FOS.write(outData, bufferInfo.offset, outData.length - bufferInfo.offset);
+                    } else  FOS.write(outData, 0, outData.length);
+
+                    FOS.flush();
+                    Log.d(TAG, "out data -- > " + outData.length);
+                    mMediaCodec.releaseOutputBuffer(outputBufferId, false);
+                    outputBufferId = mMediaCodec.dequeueOutputBuffer(bufferInfo,0);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e(TAG, "out data");
+                }
+            } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                OutputFormat = mMediaCodec.getOutputFormat();
+                Log.d(TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
+            }
+        }catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+    private static synchronized void MediaCodec_encode_BuffArrays(byte[] data)
+    {
+
+        ByteBuffer[] inputBuffers = mMediaCodec.getInputBuffers();// here changes
+        ByteBuffer[] outputBuffers = mMediaCodec.getOutputBuffers();
+        try
+        {
             int inputBufferId = mMediaCodec.dequeueInputBuffer(-1);
             if (inputBufferId >= 0) {
                 ByteBuffer inputBuffer = inputBuffers[inputBufferId];
@@ -129,66 +154,43 @@ public class Recording {
                 inputBuffer.put(data);
                 mMediaCodec.queueInputBuffer(inputBufferId, 0, data.length, 0, 0);
             }
-            drainEncoder();
+
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
+            Log.d(TAG, "outputBufferIndex-->" + outputBufferIndex);
+
+            do {
+                if (outputBufferIndex >= 0) {
+                    ByteBuffer outBuffer = outputBuffers[outputBufferIndex];
+                    System.out.println("buffer info-->" + bufferInfo.offset + "--"
+                            + bufferInfo.size + "--" + bufferInfo.flags + "--"
+                            + bufferInfo.presentationTimeUs);
+                    byte[] outData = new byte[bufferInfo.size];
+                    outBuffer.get(outData);
+                    try {
+                        if (bufferInfo.offset != 0) {
+                            FOS.write(outData, bufferInfo.offset, outData.length - bufferInfo.offset);
+                        } else  FOS.write(outData, 0, outData.length);
+
+                        FOS.flush();
+                        Log.d(TAG, "out data -- > " + outData.length);
+                        mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
+                        outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo,0);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e(TAG, "out data");
+                    }
+                } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                    outputBuffers = mMediaCodec.getOutputBuffers();
+                    Log.d(TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
+                } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    MediaFormat format = mMediaCodec.getOutputFormat();
+                    Log.d(TAG, "INFO_OUTPUT_FORMAT_CHANGED");
+                }
+            } while (outputBufferIndex >= 0);
         }catch (Throwable t) {
             t.printStackTrace();
         }
-    }
-    private static void drainEncoder()
-    {
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
-        Log.d(TAG, "outputBufferIndex-->" + outputBufferIndex);
-
-
-        try {
-            while (outputBufferIndex >= 0) {
-                ByteBuffer outputBuffer = outputBuffers[outputBufferIndex];
-                byte[] outData = new byte[bufferInfo.size];
-                outputBuffer.get(outData);
-                BOS.write(outData, 0, outData.length);
-                Log.d(TAG, outData.length + " bytes written");
-
-                mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
-                outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
-            }
-        }catch (Throwable t) {
-            t.printStackTrace();
-        }
-
-
-//        do {
-//            if (outputBufferIndex >= 0) {
-//                ByteBuffer outBuffer = outputBuffers[outputBufferIndex];
-//                System.out.println("buffer info-->" + bufferInfo.offset + "--"
-//                        + bufferInfo.size + "--" + bufferInfo.flags + "--"
-//                        + bufferInfo.presentationTimeUs);
-//                byte[] outData = new byte[bufferInfo.size];
-//                outBuffer.get(outData);
-//                try {
-//                    if (bufferInfo.offset != 0) {
-//                        FOS_MediaCodec.write(outData, bufferInfo.offset, outData.length
-//                                - bufferInfo.offset);
-//                    } else {
-//                        FOS_MediaCodec.write(outData, 0, outData.length);
-//                    }
-//                    FOS_MediaCodec.flush();
-//                    Log.d(TAG, "out data -- > " + outData.length);
-//                    mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
-//                    outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo,
-//                            0);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                    Log.e(TAG, "out data");
-//                }
-//            } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-//                outputBuffers = mMediaCodec.getOutputBuffers();
-//                Log.d(TAG, "INFO_OUTPUT_BUFFERS_CHANGED");
-//            } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-//                //MediaFormat format = mMediaCodec.getOutputFormat();
-//                Log.d(TAG, "INFO_OUTPUT_FORMAT_CHANGED");
-//            }
-//        } while (outputBufferIndex >= 0);
     }
 
 //    private static boolean encodeInputFromFile(MediaCodec encoder, ByteBuffer[] encoderInputBuffers, MediaCodec.BufferInfo info, FileChannel channel) throws IOException {
@@ -214,19 +216,11 @@ public class Recording {
 
     private static void MediaCodec_release()
     {
-        try {
+        if (mMediaCodec != null) {
             mMediaCodec.stop();
             mMediaCodec.release();
-        } catch (Exception e){
-            e.printStackTrace();
+            mMediaCodec = null;
         }
-//        if (mMediaMuxer != null) {
-//            // TODO: stop() throws an exception if you haven't fed it any data.  Keep track
-//            //       of frames submitted, and don't call stop() if we haven't written anything.
-//            if(mMuxerStarted)mMediaMuxer.stop();
-//            mMediaMuxer.release();
-//            mMediaMuxer = null;
-//        }
     }
 //    private static void drainEncoder2()
 //    {
