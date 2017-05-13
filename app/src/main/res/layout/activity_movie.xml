@@ -5,12 +5,19 @@
     android:layout_height="match_parent"
     android:weightSum="1">
 
-    <VideoView
-        android:id="@+id/videoview"
+    <com.example.idry7lash629.opencv_color_test.CustomVideoView
+        android:id="@+id/custom_videoview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="visible"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"/>
+
+    <!--<VideoView-->
+        <!--android:id="@+id/videoview"-->
+        <!--android:layout_width="fill_parent"-->
+        <!--android:layout_height="fill_parent"-->
+        <!--android:visibility="visible"-->
+        <!--android:layout_gravity="center" />-->
 
 
 </LinearLayout>

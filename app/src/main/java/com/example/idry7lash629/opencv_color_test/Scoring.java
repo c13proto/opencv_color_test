@@ -1,6 +1,8 @@
 package com.example.idry7lash629.opencv_color_test;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,7 +28,7 @@ public class Scoring {
     public static List<Double> SCORE = new ArrayList<Double>();
 
 
-    public static void csv_read(Context context, List<Point[]> data, String file_name) {
+    public static void csv_read_assets(Context context, List<Point[]> data, String file_name) {
         data.clear();
         // AssetManagerの呼び出し
         AssetManager assetManager = context.getResources().getAssets();
@@ -53,16 +55,52 @@ public class Scoring {
             e.printStackTrace();
         }
 
-        String points_data="";
-        for (Point[] points : DATA2)
-        {
-            for (Point point : points)
-            {
-                points_data += "" + point.x + ',' + point.y + ',' + '\t';
+//        String points_data="";
+//        for (Point[] points : data)
+//        {
+//            for (Point point : points)
+//            {
+//                points_data += "" + point.x + ',' + point.y + ',' + '\t';
+//            }
+//            points_data += "\r\n";
+//        }
+//        Log.d("Scoring,csv_read",points_data);
+    }
+
+    public static void csv_read(String file_name, List<Point[]> data) {
+        data.clear();
+
+        try {
+            File file = new File(file_name);
+            BufferedReader bufferReader = new BufferedReader(new FileReader(file));
+
+            String line = "";
+            while ((line = bufferReader.readLine()) != null) {
+                // 各行が","で区切られていて4つの項目があるとする
+                String[] values = line.split(",");
+                int num_of_point = values.length / 2;
+                Point[] point = new Point[num_of_point];
+
+                for (int i = 0; i < num_of_point; i++)
+                    point[i] = new Point(Integer.parseInt(values[i * 2]), Integer.parseInt(values[i * 2 + 1]));
+
+                data.add(point);
             }
-            points_data += "\r\n";
+            bufferReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        Log.d("csv_read",points_data);
+
+//        String points_data="";
+//        for (Point[] points : data)
+//        {
+//            for (Point point : points)
+//            {
+//                points_data += "" + point.x + ',' + point.y + ',' + '\t';
+//            }
+//            points_data += "\r\n";
+//        }
+//        Log.d("Scoring,csv_read",points_data);
     }
 
     public static double 採点処理()
@@ -91,21 +129,21 @@ public class Scoring {
             角度採点(   Points_t[4], Points_t[1], Points_t[0],
                     Points_s[4], Points_s[1], Points_s[0], score);
 
-            String debug = i + ":";
+            //String debug = i + ":";
             if (score.size() != 0)
             {
                 double average=calculateAverage(score);
                 SCORE.add((average * 10.0));
-                debug+=average+"：データ数"+score.size();
+                //debug+=average+"：データ数"+score.size();
             }
 
-            Log.d("採点処理",debug);
+            //Log.d("採点処理",debug);
             score.clear();
 
         }
         double average=calculateAverage(SCORE);
 
-        Log.d("総合平均スコア:",average+":データ数:"+SCORE.size());
+        Log.d("Scoring,総合平均スコア:",average+":データ数:"+SCORE.size());
         return average;
 
     }
@@ -142,12 +180,12 @@ public class Scoring {
             else if (angle_diff < PI / 4) score.add(4.0);
             else if (angle_diff < PI / 3) score.add(3.0);
             else if (angle_diff < PI / 2) score.add(2.0);
-            else if (angle_diff < PI / 1) score.add(1.0);
-            else score.add(0.0);
+            else score.add(-1.0);//負の得点導入してみる
 
-            Log.d("角度採点",""+score.get(score.size() - 1));
+            Log.d("Scoring,角度採点",""+score.get(score.size() - 1));
         }
-        else { }
+        else { //角度判定できないとき
+        }
 
     }
 
@@ -172,23 +210,23 @@ public class Scoring {
 
         else
         {
-            String debug = "";
-
-            if (教師データ判定可否 == false)
-            {
-                debug += "skip_scoring";
-                debug += "\t教師:";
-                if (distance1_t > 基準長さ || distance2_t > 基準長さ) debug += "距離:";
-                debug +="0";
-            }
-            if(生徒データ判定可否==false){
-
-                debug += "\t生徒:";
-                if (distance1_s > 基準長さ || distance2_s > 基準長さ) debug += "距離:";
-                debug += "0";
-
-            }
-            Log.d("角度計算可否判定",debug);
+//            String debug = "";
+//
+//            if (教師データ判定可否 == false)
+//            {
+//                debug += "skip_scoring";
+//                debug += "\t教師:";
+//                if (distance1_t > 基準長さ || distance2_t > 基準長さ) debug += "距離:";
+//                debug +="0";
+//            }
+//            if(生徒データ判定可否==false){
+//
+//                debug += "\t生徒:";
+//                if (distance1_s > 基準長さ || distance2_s > 基準長さ) debug += "距離:";
+//                debug += "0";
+//
+//            }
+//            Log.d("角度計算可否判定",debug);
             return false;
         }
     }
