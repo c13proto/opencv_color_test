@@ -23,13 +23,13 @@ public class Movie {
             @Override
             public void onPlay() {
                 System.out.println("Play!");
-                //if(!Recording.isRECORDING)Recording.Recorder_init_start();
+                //if(!Recording.isRECORD_CTRL)Recording.isRECORD_CTRL=true;
             }
 
             @Override
             public void onPause() {
                 System.out.println("Pause!");
-                //if(Recording.isRECORDING)Recording.Record_stop();
+                //if(Recording.isRECORD_CTRL)Recording.isRECORD_CTRL=false;
             }
         });
 

@@ -20,7 +20,7 @@ import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class ImageProcessing {
 
-    private static Size 画像処理サイズ=new Size(640,480);
+    public static Size 画像処理サイズ=new Size(640,480);
 
     private static Scalar[] 黄バンド=new Scalar[]{new Scalar(20, 127, 132), new Scalar(30, 255, 255)};
     private static Scalar[] 緑バンド = new Scalar[] { new Scalar(60,102, 40), new Scalar(80, 255, 179) };
@@ -39,6 +39,12 @@ public class ImageProcessing {
 
 
 
+    public static Mat make_transparent(CameraBridgeViewBase.CvCameraViewFrame Frame)
+    {
+        Mat transparent=new Mat(Frame.rgba().size(),CvType.CV_8SC4);
+        transparent=Mat.zeros(transparent.size(),CvType.CV_8SC4);
+        return transparent;
+    }
     public static Mat make_frame_function(CameraBridgeViewBase.CvCameraViewFrame Frame)
     {
         Mat frame_resize=Frame.rgba();//処理速度向上のため画素を下げる

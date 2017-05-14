@@ -15,4 +15,9 @@
         android:id="@+id/menu_movie"
         android:showAsAction="ifRoom"
         android:title="movie"/>
+    <item
+        android:id="@+id/menu_main"
+        android:showAsAction="ifRoom"
+        android:title="main"
+        android:visible="false"/>
 </menu>

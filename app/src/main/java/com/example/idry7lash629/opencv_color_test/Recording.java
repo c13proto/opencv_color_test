@@ -13,6 +13,9 @@ import android.util.Log;
 import org.jcodec.api.android.SequenceEncoder;
 import org.jcodec.common.model.ColorSpace;
 import org.jcodec.common.model.Picture;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 
 import java.io.BufferedOutputStream;
@@ -39,7 +42,8 @@ public class Recording {
 
     //jcodec関係
     private static SequenceEncoder mSequenceEncoder;
-    public static boolean isRECORDING=false;
+    public static boolean isRECORD_CTRL=false;
+    public static boolean isENCODING=false;
 
 
 
@@ -316,6 +320,29 @@ public class Recording {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public static void jcodec_encode(Mat frame)
+    {
+        try {
+            if(frame.width()==640&&frame.height()==480) {
+                Log.d(TAG, "jcodec_encode");
+                Bitmap bmp = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.ARGB_8888); // this creates a MUTABLE bitmap
+                Utils.matToBitmap(frame, bmp);
+                mSequenceEncoder.encodeNativeFrame(getBitmapAsPicture(bmp));
+                bmp.recycle();
+            }else Log.d(TAG, "jcodec_frame_width_error:width="+frame.width());
+
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void jcodec_finish_encode()
+    {   try{
+            mSequenceEncoder.finish();
+            Log.d(TAG, "jcodec_finish_encode");
+        }
+        catch (IOException e) {e.printStackTrace();}
+
     }
 
     private static Picture getBitmapAsPicture(Bitmap bmp)
